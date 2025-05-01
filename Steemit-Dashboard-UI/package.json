@@ -1,0 +1,20 @@
+{
+  "name": "nodejs-project",
+  "version": "1.0.0",
+  "description": "## Overview This is a Node.js project designed to demonstrate the basic structure and functionality of a Node.js application.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dsteem": "^0.11.3",
+    "express": "^5.1.0",
+    "inquirer": "^7.3.3",
+    "moment": "^2.30.1",
+    "open": "^10.1.2"
+  }
+}

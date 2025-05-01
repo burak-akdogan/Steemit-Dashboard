@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" />
+
+  <title>STEEM/SBD Transfer Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6 font-sans">
+  <div class="max-w-6xl mx-auto space-y-8">
+
+    <!-- Title and Description -->
+    <div class="text-center">
+      <h1 class="text-4xl font-extrabold text-blue-600 mb-4 animate__animated animate__fadeIn">Daily STEEM/SBD Transfers (Top 10)</h1>
+      <p class="text-lg text-gray-600 mb-8">This dashboard shows the top 10 users by STEEM/SBD transfers for the last 24 hours.</p>
+    </div>
+
+    <!-- Transfer Chart Section -->
+    <div class="bg-white p-6 rounded-lg shadow-lg mb-8 border-t-4 border-blue-500 animate__animated animate__fadeInUp">
+      <canvas id="transferChart" width="1000" height="600"></canvas>
+    </div>
+
+    <!-- Whale Data Section -->
+    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-green-500 animate__animated animate__fadeInUp">
+      <h2 class="text-3xl font-semibold text-center text-green-600 mb-4">Top Whales of the Day</h2>
+      <p class="text-center text-lg text-gray-600 mb-8">This section displays the top whales of the day based on their STEEM/SBD transfers.</p>
+      <div id="whaleData" class="overflow-y-auto max-h-72">
+        <ul id="whaleList" class="space-y-4 text-lg text-gray-700 pl-5">
+          <!-- Whale data will be displayed as list items here -->
+        </ul>
+      </div>
+    </div>
+
+    <!-- Greed/Fear Index Section -->
+    <div class="bg-white p-6 rounded-lg shadow-lg border-t-4 border-yellow-500 animate__animated animate__fadeInUp">
+      <h2 class="text-3xl font-semibold text-center text-yellow-600 mb-4">Steemit Greed/Fear Index</h2>
+      <p class="text-center text-lg text-gray-600 mb-8">This index shows the current market sentiment on Steemit.</p>
+      <div class="text-center">
+        <canvas id="greedFearChart" width="400" height="200"></canvas>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Fetching and displaying the transfer chart
+    fetch('daily_transfer_summary.json')
+      .then(res => res.json())
+      .then(data => {
+        // Sorting data by STEEM amounts
+        data.sort((a, b) => parseFloat(b.total_steem) - parseFloat(a.total_steem));
+
+        const top10 = data.slice(0, 10);
+        const users = top10.map(d => d.user);
+        const steemAmounts = top10.map(d => parseFloat(d.total_steem));
+        const sbdAmounts = top10.map(d => parseFloat(d.total_sbd));
+
+        const ctx = document.getElementById('transferChart').getContext('2d');
+        
+        // Creating the transfer chart
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: users,
+            datasets: [
+              {
+                label: 'STEEM',
+                data: steemAmounts,
+                backgroundColor: 'rgba(59, 130, 246, 0.6)', // Tailwind blue-500
+              },
+              {
+                label: 'SBD',
+                data: sbdAmounts,
+                backgroundColor: 'rgba(34, 197, 94, 0.6)', // Tailwind green-500
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  font: {
+                    size: 16
+                  }
+                }
+              },
+              title: {
+                display: true,
+                text: 'Top 10 Users by STEEM/SBD Transfers. Total STEEM: ' + top10.reduce((sum, d) => sum + parseFloat(d.total_steem), 0).toFixed(2) + ', Total SBD: ' + top10.reduce((sum, d) => sum + parseFloat(d.total_sbd), 0).toFixed(2),
+                font: {
+                  size: 18
+                }
+              }
+            },
+            scales: {
+              x: {
+                ticks: {
+                  autoSkip: false,
+                  maxRotation: 45,
+                  minRotation: 30
+                }
+              },
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  stepSize: 500
+                }
+              }
+            }
+          }
+        });
+      });
+
+    // Fetching and displaying whale data
+    fetch('daily_whales.json')
+      .then(res => res.json())
+      .then(data => {
+        const whaleList = document.getElementById('whaleList');
+        whaleList.innerHTML = ''; // Clear previous data
+
+        if (data.length === 0) {
+          whaleList.innerHTML = '<li class="text-gray-500">No whales found for today.</li>';
+        } else {
+          // Loop through whale data and display each whale's information
+          data.forEach(whale => {
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="font-semibold text-blue-600">${whale.user}</span>: 
+                            <strong class="text-blue-500">${whale.total_steem} STEEM</strong>, 
+                            <strong class="text-green-500">${whale.total_sbd} SBD</strong>`;
+            whaleList.appendChild(li);
+          });
+        }
+      })
+      .catch(err => {
+        console.error('Error fetching whale data:', err);
+      });
+
+    // Fetching and displaying the Greed/Fear Index
+    async function calculateGreedFearIndex() {
+      // Fetch STEEM price data from CoinGecko
+      const priceResponse = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=steem&vs_currencies=usd');
+      const priceData = await priceResponse.json();
+      const steemPrice = priceData.steem.usd;
+
+      // Fetch transaction volume (you can also use Steemit API or a third-party API)
+      const transactionResponse = await fetch('https://api.steemit.com/get_dynamic_global_properties');
+      const transactionData = await transactionResponse.json();
+      const transactionVolume = transactionData.total_transactions;
+
+      // Calculate volatility using price changes over a period (e.g., last 24 hours)
+      const priceHistoryResponse = await fetch('https://api.coingecko.com/api/v3/coins/steem/market_chart?vs_currency=usd&days=1');
+      const priceHistory = await priceHistoryResponse.json();
+      const priceChange = Math.abs(priceHistory.prices[0][1] - priceHistory.prices[priceHistory.prices.length - 1][1]);
+
+      // Example Greed/Fear Index calculation (simplified)
+      let greedFearIndex = 50; // Neutral index
+      if (priceChange > 0.1) {
+        greedFearIndex = 30; // High volatility indicates Fear
+      } else if (steemPrice > 1.5) {
+        greedFearIndex = 70; // High price indicates Greed
+      }
+
+      // Display Greed/Fear Index
+      displayGreedFearIndex(greedFearIndex);
+    }
+
+    // Display the Greed/Fear Index using Chart.js
+    function displayGreedFearIndex(index) {
+      const ctx = document.getElementById('greedFearChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Fear', 'Greed'],
+          datasets: [{
+            data: [100 - index, index],
+            backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(75, 192, 192, 0.5)'],
+          }]
+        },
+        options: {
+          responsive: true,
+          cutoutPercentage: 60, // Hollow center for the doughnut
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            tooltip: {
+              callbacks: {
+                label: (context) => {
+                  return `Greed/Fear Index: ${index}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Run the Greed/Fear Index calculation
+    calculateGreedFearIndex();
+
+  </script>
+</body>
+</html>

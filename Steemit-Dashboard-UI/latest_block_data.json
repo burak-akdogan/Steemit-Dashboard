@@ -1,0 +1,12 @@
+{
+  "previous": "00000063a3f80fc328722f60d1a63faf5e14f154",
+  "timestamp": "2016-03-24T16:10:30",
+  "witness": "initminer",
+  "transaction_merkle_root": "0000000000000000000000000000000000000000",
+  "extensions": [],
+  "witness_signature": "1f0bab4ee04e5445ec52b2aaa05213896eedb6552a99aeddb0ff74d8a925ce4f5a1ed027646f93393946648a4905530829cbd6e3953ebeda9820c3f25ac664fa5f",
+  "transactions": [],
+  "block_id": "00000064419f3740f755558a6b3ee7b1de82f0cb",
+  "signing_key": "STM8GC13uCZbP44HzMLV6zPZGwVQ8Nt4Kji8PapsPiNq1BK153XTX",
+  "transaction_ids": []
+}
