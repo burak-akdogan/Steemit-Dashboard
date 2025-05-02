@@ -4,11 +4,11 @@ const fs = require('fs');
 // Steem client
 const client = new dsteem.Client('https://api.steemit.com');
 
-// 1 gün = 28800 blok
+// 1 day = 28800 blocks (but original was 14400, likely a mistake; keeping as is)
 const BLOCKS_PER_DAY = 14400;
 
 
-// Yardımcı: Transferleri toplayan fonksiyon
+// Helper: Function to calculate transfer totals
 function calculateTotals(transfers) {
     const totals = {};
 
@@ -20,7 +20,7 @@ function calculateTotals(transfers) {
         totals[from][currency] += parseFloat(value);
     }
 
-    // JSON'a uygun dizi haline getir
+    // Convert to array format suitable for JSON
     return Object.entries(totals).map(([user, amounts]) => ({
         user,
         total_steem: amounts.STEEM.toFixed(3),
@@ -28,13 +28,13 @@ function calculateTotals(transfers) {
     }));
 }
 
-// JSON olarak kaydet
+// Save as JSON
 function saveToFile(filename, data) {
     fs.writeFileSync(filename, JSON.stringify(data, null, 2));
     console.log(`✅ ${filename} saved.`);
 }
 
-// Ana fonksiyon
+// Main function
 async function main() {
     const { head_block_number } = await client.database.getDynamicGlobalProperties();
     const endBlock = head_block_number;
@@ -63,7 +63,7 @@ async function main() {
             console.error(`Block ${blockNum} error:`, e.message);
         }
 
-        // Opsiyonel: API'yi zorlamamak için biraz bekle
+        // Optional: Wait a bit to avoid overloading the API
         if (blockNum % 100 === 0) {
             console.log(`Scanned block ${blockNum}`);
             await new Promise(res => setTimeout(res, 100));
